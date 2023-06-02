@@ -1,4 +1,4 @@
-```import os
+import os
 from flask import Flask, jsonify, request
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
@@ -31,8 +31,14 @@ def generate_text():
         outputs = model.generate(inputs, max_length=100)
 
     generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    # Remove the input text from the output
     generated_text = generated_text[len(input_text):]
+    # Remove "ASSISTANT: " from the generated text
     generated_text = generated_text.replace("ASSISTANT: ", "")
+    # Clean up the generated text by removing line breaks and extra spaces
+    generated_text = generated_text.replace("\n", " ").replace("\r", " ")
+    generated_text = ' '.join(generated_text.split())
+
     return jsonify({'generated_text': generated_text})
 
 if __name__ == '__main__':
@@ -45,4 +51,3 @@ if __name__ == '__main__':
         model.save_pretrained(MODEL_PATH)
 
     app.run(host='0.0.0.0', port=5000)
-```
