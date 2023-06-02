@@ -1,4 +1,4 @@
-import os
+```import os
 from flask import Flask, jsonify, request
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
@@ -50,4 +50,4 @@ if __name__ == '__main__':
         tokenizer.save_pretrained(MODEL_PATH)
         model.save_pretrained(MODEL_PATH)
 
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5000)```
