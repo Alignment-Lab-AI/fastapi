@@ -1,40 +1,31 @@
-from flask import Flask, request, jsonify, abort
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
-import os
-import logging
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from flask import Flask, request, jsonify
 import torch
+from transformers import AutoModelForCausalLM
+import os
+from tokenizer_utils import get_tokenizer, tokenize_text
 
 app = Flask(__name__)
 
-limiter = Limiter(app, key_func=get_remote_address)
-
-# Set up logging
-logging.basicConfig(filename='api.log', level=logging.INFO)
-
 MODEL_PATH = "./my_model2"
-model_name = os.getenv("MODEL_NAME", "openaccess-ai-collective/manticore-13b")
+tokenizer = None
+model = None
+
+device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+
+if os.path.exists(MODEL_PATH):
+    tokenizer = get_tokenizer(MODEL_PATH)
+    model = AutoModelForCausalLM.from_pretrained(MODEL_PATH)
+    model.to(device)
 
 @app.route('/generate', methods=['POST'])
-@limiter.limit("10/minute")  # rate limit
 def generate_text():
     data = request.get_json()
-    logging.info(f"Received data: {data}")
 
     if 'input_text' not in data:
-        abort(400, description="Missing parameter: input_text")
+        return jsonify({"error": "Missing parameter: input_text"}), 400
 
     input_text = data['input_text']
 
-    # Input validation
-    if len(input_text) > 500:
-        abort(400, description="Input text too long")
-
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
-    model = AutoModelForCausalLM.from_pretrained(MODEL_PATH)
-    model.to(device)
-    
     inputs = tokenizer.encode(input_text, return_tensors='pt').to(device)
 
     with torch.no_grad():
@@ -43,14 +34,28 @@ def generate_text():
     generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
     return jsonify({'generated_text': generated_text})
 
-@app.route('/health', methods=['GET'])
-def health_check():
-    return jsonify({"status": "OK"})
+@app.route('/tokenize', methods=['POST'])
+def tokenize_endpoint():
+    data = request.get_json()
+
+    if 'input_text' not in data:
+        return jsonify({"error": "Missing parameter: input_text"}), 400
+
+    if 'output_path' not in data:
+        return jsonify({"error": "Missing parameter: output_path"}), 400
+
+    input_text = data['input_text']
+    output_path = data['output_path']
+
+    tokenize_text(tokenizer, input_text, output_path)  # use the function here
+
+    return jsonify({'message': f'Tokenized data saved to {output_path}'})
 
 if __name__ == '__main__':
+
     if not os.path.exists(MODEL_PATH):
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
-        model = AutoModelForCausalLM.from_pretrained(model_name)
-        tokenizer.save_pretrained(MODEL_PATH)
-        model.save_pretrained(MODEL_PATH)
-    app.run(host='0.0.0.0', port=int(os.getenv("PORT", 5000)))
+        tokenizer = get_tokenizer(MODEL_PATH)
+        model = AutoModelForCausalLM.from_pretrained("openaccess-ai-collective/manticore-13b")
+        model.to(device)
+
+    app.run(host='0.0.0.0', port=5000)
