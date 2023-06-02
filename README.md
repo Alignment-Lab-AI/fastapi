@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+```from flask import Flask, request, jsonify
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import os
@@ -46,4 +46,4 @@ if __name__ == '__main__':
 
     app.run(host='0.0.0.0', port=5000)
 
-prompt is not defined
+prompt is not defined```
