@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 import torch
 from transformers import AutoModelForCausalLM
 import os
-from tokenizer_utils import get_tokenizer, tokenize_text
+from utils import get_tokenizer, tokenize_text
 
 app = Flask(__name__)
 
