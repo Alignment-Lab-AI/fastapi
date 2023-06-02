@@ -31,9 +31,7 @@ def generate_text():
         outputs = model.generate(inputs, max_length=100)
 
     generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    # Remove the input text from the output
     generated_text = generated_text[len(input_text):]
-    # Remove "ASSISTANT: " from the generated text
     generated_text = generated_text.replace("ASSISTANT: ", "")
     return jsonify({'generated_text': generated_text})
 
